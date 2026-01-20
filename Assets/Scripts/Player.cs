@@ -15,7 +15,6 @@ public class Player : MonoBehaviour, IKitchenObjectParent
     [SerializeField] private Transform holdTransform;
 
     private Vector3 moveDir;
-    private Vector3 lastMoveDir;
     private float moveDist;
     private bool isWalking = false;
     private KitchenObject kitchenObject;
@@ -29,7 +28,7 @@ public class Player : MonoBehaviour, IKitchenObjectParent
 
     private void GameInput_OnInteractAction(object sender, System.EventArgs e)
     {
-        if (Physics.Raycast(transform.position, lastMoveDir, out RaycastHit hit, interactionDistance, countersLayer))
+        if (Physics.Raycast(transform.position, transform.forward, out RaycastHit hit, interactionDistance, countersLayer))
         {
             if (hit.transform.TryGetComponent(out ClearCounter clearCounter))
             {
@@ -51,7 +50,6 @@ public class Player : MonoBehaviour, IKitchenObjectParent
 
         if (moveDir != Vector3.zero)
         {
-            lastMoveDir = moveDir;
             moveDist = moveSpeed * Time.deltaTime;
 
             Vector3 spherePt1 = transform.position + Vector3.up * playerRadius;
@@ -61,10 +59,14 @@ public class Player : MonoBehaviour, IKitchenObjectParent
             {
                 Debug.DrawRay(hit.point, hit.normal * 2, Color.red);
                 // Slide along the hit surface instead of stopping
-                Vector3 slideDir = Vector3.ProjectOnPlane(moveDir, hit.normal).normalized;
-                lastMoveDir = slideDir;
-                Debug.DrawRay(transform.position, slideDir * 2, Color.green);
-                transform.position += slideDir * moveDist;
+                Vector3 slide = Vector3.ProjectOnPlane(moveDir, hit.normal);
+                float slideMag = slide.magnitude;
+                if (slideMag > 0.2f)
+                {
+                    Vector3 slideDir = slide / slideMag;
+                    Debug.DrawRay(transform.position, slideDir * 2, Color.green);
+                    transform.position += slideDir * moveDist;
+                }
             }
             else
             {
@@ -85,7 +87,7 @@ public class Player : MonoBehaviour, IKitchenObjectParent
     
     private void HandlePlayerInteraction()
     {
-        Debug.DrawRay(transform.position, lastMoveDir * interactionDistance, Color.magenta);
+        Debug.DrawRay(transform.position, transform.forward * interactionDistance, Color.magenta);
     }
 
     public bool IsWalking()
